@@ -1,2 +1,2 @@
-# Infrastructure As A Code
+# Infrastructure as Code
 scripts to create infrastructure on Aws to deploy a high-availability web app using CloudFormation

@@ -4,13 +4,13 @@ Parameters:
         Type: String
 
 Resources:
-  ProfileWithRolesForOurApp:
+  ProfileWithRolesForOurApp:  
     Type: AWS::IAM::InstanceProfile
     Properties:
       Roles:
-        - role_for_ec2
+        - role_for_ec2  #role i created before on aws to associate it to some machines here
 
-  LBSecGroup:
+  LBSecGroup: #security group to control the load balancer ports(in/out)
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow http to our load balancer
@@ -27,7 +27,7 @@ Resources:
         ToPort: 80
         CidrIp: 0.0.0.0/0
       
-  WebServerSecGroup:
+  WebServerSecGroup:  #security group to control the web server ports(in/out), port 22 to use it in logs and Troubleshoots
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow http to our hosts and SSH from local only
@@ -48,7 +48,7 @@ Resources:
         ToPort: 65535
         CidrIp: 0.0.0.0/0
 
-  WebAppLaunchConfig:
+  WebAppLaunchConfig:   
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
       UserData:
@@ -60,32 +60,32 @@ Resources:
           apt-get install unzip awscli -y
           cd /var/www/html
           rm index.html
-          aws s3 cp s3://udacity-project2-demo-1/udacity.zip .
+          aws s3 cp s3://udacity-project2-demo-1/udacity.zip . #copy the wep app from s3 bucket
           unzip -o udacity.zip
       ImageId: ami-005bdb005fb00e791
       SecurityGroups:
-      - Ref: WebServerSecGroup
-      InstanceType: t3.medium
+      - Ref: WebServerSecGroup  #associate the web app with security group
+      InstanceType: t3.medium   #the machine type
       IamInstanceProfile:
-        Ref: ProfileWithRolesForOurApp
+        Ref: ProfileWithRolesForOurApp  #associate the role i created to this machine
       BlockDeviceMappings:
-      - DeviceName: "/dev/sdk"
+      - DeviceName: "/dev/sdk"          #create only 1 partition with 10 GB
         Ebs:
           VolumeSize: '10'
 
-  WebAppGroup:
+  WebAppGroup:          #associate Auto scalling group to our machine with MAX machines = MIN machines = 4 
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       VPCZoneIdentifier:
       - Fn::ImportValue: !Sub "${EnvironmentName}-PRIV-NETS"
       LaunchConfigurationName:
-        Ref: WebAppLaunchConfig
+        Ref: WebAppLaunchConfig   #set configuration to the Auto scalling group to know how to detect the machine is failed
       MinSize: '4'
       MaxSize: '4'
       TargetGroupARNs:
       - Ref: WebAppTargetGroup
 
-  WebAppLB:
+  WebAppLB:   #associate the load balancer to the public machines that created in network.yaml file
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
       Subnets:
@@ -94,7 +94,7 @@ Resources:
       SecurityGroups:
       - Ref: LBSecGroup
 
-  Listener:
+  Listener:   #associate the load balancer to the target group
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       DefaultActions:
@@ -118,7 +118,7 @@ Resources:
         ListenerArn: !Ref 'Listener'
         Priority: 1
 
-  WebAppTargetGroup:
+  WebAppTargetGroup:    #target group to be associated to the load balancer
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       HealthCheckIntervalSeconds: 10
